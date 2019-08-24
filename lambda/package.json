@@ -1,0 +1,22 @@
+{
+  "name": "lambda-foodie-friend",
+  "version": "1.0.0",
+  "description": "lambda methods for writing to Foodie Friend DB",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nakedsushi/lambda-foodie-friend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nakedsushi/lambda-foodie-friend/issues"
+  },
+  "homepage": "https://github.com/nakedsushi/lambda-foodie-friend#readme",
+  "devDependencies": {
+    "aws-sdk": "^2.517.0"
+  }
+}

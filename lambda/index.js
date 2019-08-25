@@ -2,6 +2,14 @@ const AWS = require('aws-sdk');
 
 const dynamo = new AWS.DynamoDB.DocumentClient();
 
+function formatResponse(data) {
+  return {
+    "statusCode": 200,
+    "body": JSON.stringify(data),
+    "isBase64Encoded": false
+  };
+}
+
 exports.handler = (event, context, callback) => {
   let payload;
   const operation = event.httpMethod;
@@ -9,11 +17,12 @@ exports.handler = (event, context, callback) => {
   switch (operation) {
     case 'POST':
       payload = JSON.parse(event.body);
+      payload.TableName = process.env.TABLE_NAME;
       dynamo.put(payload, callback);
       break;
     case 'GET':
-      const tags = event.queryStringParameters.tags;
-      if (tags) {
+      if (event.queryStringParameters && event.queryStringParameters.tags) {
+        const tags = event.queryStringParameters.tags;
         const filterExpressionArray = [];
         const attributeValues = {};
 
@@ -22,34 +31,34 @@ exports.handler = (event, context, callback) => {
           attributeValues[`:tag${i+1}`] = tag;
         });
         payload = {
-          "TableName": "Restaurants",
+          "TableName": process.env.TABLE_NAME,
           "FilterExpression": filterExpressionArray.join(" AND "),
           ExpressionAttributeValues: attributeValues
         };
-        dynamo.scan(payload, function(err, data) {
-          const response = {
-            "statusCode": 200,
-            "body": JSON.stringify(data),
-            "isBase64Encoded": false
-          };
-          callback(null, response);
+        dynamo.scan(payload, (err, data) => {
+          callback(null, formatResponse(data));
         });
       } else {
-        
+        payload = {
+          "TableName": process.env.TABLE_NAME,
+          ProjectionExpression: "RestaurantId"
+        };
+        dynamo.scan(payload, (err, data) => {
+          const totalItems = data.Items.length;
+          const randomIndex = Math.floor(Math.random() * totalItems);
+          const restaurantId = data.Items[randomIndex].RestaurantId;
+          payload = {
+            "TableName": process.env.TABLE_NAME,
+            "KeyConditionExpression": `RestaurantId = :restaurantId`,
+            "ExpressionAttributeValues": {
+              ":restaurantId": restaurantId
+            }
+          };
+          dynamo.query(payload, (error, restaurant) => {
+            callback(null, formatResponse(restaurant));
+          });
+        });
       }
-
-      break;
-    case 'update':
-      dynamo.update(payload, callback);
-      break;
-    case 'delete':
-      dynamo.delete(payload, callback);
-      break;
-    case 'echo':
-      callback(null, 'Success');
-      break;
-    case 'ping':
-      callback(null, 'pong');
       break;
     default:
       callback(`Unknown operation: ${operation}`);

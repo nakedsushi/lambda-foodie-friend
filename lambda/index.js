@@ -5,7 +5,6 @@ const dynamo = new AWS.DynamoDB.DocumentClient();
 exports.handler = (event, context, callback) => {
   let payload;
   const operation = event.httpMethod;
-  console.log(event);
 
   switch (operation) {
     case 'POST':
@@ -13,13 +12,17 @@ exports.handler = (event, context, callback) => {
       dynamo.put(payload, callback);
       break;
     case 'GET':
+      const tags = event.queryStringParameters.tags;
+      const filterExpressionArray = [];
+      const attributeValues = {};
+      tags.split(",").forEach((tag, i) => {
+        filterExpressionArray.push(`contains(tags, :tag${i+1})`);
+        attributeValues[`:tag${i+1}`] = tag;
+      });
       payload = {
         "TableName": "Restaurants",
-        "FilterExpression": "contains(tags, :tag1) OR contains(tags, :tag2)",
-        ExpressionAttributeValues: {
-          ":tag1": "low",
-          ":tag2": "dumplings"
-        }
+        "FilterExpression": filterExpressionArray.join(" OR "),
+        ExpressionAttributeValues: attributeValues
       };
       dynamo.scan(payload, function(err, data) {
         const response = {

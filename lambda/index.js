@@ -13,25 +13,31 @@ exports.handler = (event, context, callback) => {
       break;
     case 'GET':
       const tags = event.queryStringParameters.tags;
-      const filterExpressionArray = [];
-      const attributeValues = {};
-      tags.split(",").forEach((tag, i) => {
-        filterExpressionArray.push(`contains(tags, :tag${i+1})`);
-        attributeValues[`:tag${i+1}`] = tag;
-      });
-      payload = {
-        "TableName": "Restaurants",
-        "FilterExpression": filterExpressionArray.join(" OR "),
-        ExpressionAttributeValues: attributeValues
-      };
-      dynamo.scan(payload, function(err, data) {
-        const response = {
-          "statusCode": 200,
-          "body": JSON.stringify(data),
-          "isBase64Encoded": false
+      if (tags) {
+        const filterExpressionArray = [];
+        const attributeValues = {};
+
+        tags.split(",").forEach((tag, i) => {
+          filterExpressionArray.push(`contains(tags, :tag${i+1})`);
+          attributeValues[`:tag${i+1}`] = tag;
+        });
+        payload = {
+          "TableName": "Restaurants",
+          "FilterExpression": filterExpressionArray.join(" AND "),
+          ExpressionAttributeValues: attributeValues
         };
-        callback(null, response);
-      });
+        dynamo.scan(payload, function(err, data) {
+          const response = {
+            "statusCode": 200,
+            "body": JSON.stringify(data),
+            "isBase64Encoded": false
+          };
+          callback(null, response);
+        });
+      } else {
+        
+      }
+
       break;
     case 'update':
       dynamo.update(payload, callback);

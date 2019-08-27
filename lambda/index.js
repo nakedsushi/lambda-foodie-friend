@@ -6,6 +6,10 @@ function formatResponse(data) {
   return {
     "statusCode": 200,
     "body": JSON.stringify(data),
+    "headers": {
+      "Access-Control-Allow-Origin" : "*",
+      "Access-Control-Allow-Credentials" : true
+    },
     "isBase64Encoded": false
   };
 }

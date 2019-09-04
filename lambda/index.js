@@ -14,6 +14,34 @@ function formatResponse(data) {
   };
 }
 
+function formatTagsIntoExpressions(tags) {
+  const price = [];
+  const time = [];
+  const attributeValues = {};
+  const filterExpressionArray = [];
+
+  tags.split(",").forEach((tag, i) => {
+    if (['low', 'medium', 'high'].indexOf(tag) > -1) {
+      price.push(`contains(tags, :tag${i+1})`);
+    } else if (['breakfast', 'lunch', 'dinner'].indexOf(tag) > -1) {
+      time.push(`contains(tags, :tag${i+1})`);
+    } else {
+      filterExpressionArray.push(`contains(tags, :tag${i+1})`);
+    }
+    attributeValues[`:tag${i+1}`] = tag;
+  });
+  let filterExpressionString =
+    "(" + filterExpressionArray.join(" OR ") + ")";
+  if (price.length > 0) {
+    filterExpressionString += "AND (" + price.join(" OR ") + ")";
+  }
+  if (time.length > 0) {
+    filterExpressionString += "AND (" + time.join(" OR ") + ")";
+  }
+
+  return [filterExpressionString, attributeValues];
+}
+
 exports.handler = (event, context, callback) => {
   let payload;
   const operation = event.httpMethod;
@@ -27,16 +55,11 @@ exports.handler = (event, context, callback) => {
     case 'GET':
       if (event.queryStringParameters && event.queryStringParameters.tags) {
         const tags = event.queryStringParameters.tags;
-        const filterExpressionArray = [];
-        const attributeValues = {};
+        const [filterExpressionString, attributeValues] = formatTagsIntoExpressions(tags);
 
-        tags.split(",").forEach((tag, i) => {
-          filterExpressionArray.push(`contains(tags, :tag${i+1})`);
-          attributeValues[`:tag${i+1}`] = tag;
-        });
         payload = {
           "TableName": process.env.TABLE_NAME,
-          "FilterExpression": filterExpressionArray.join(" AND "),
+          "FilterExpression": filterExpressionString,
           ExpressionAttributeValues: attributeValues
         };
         dynamo.scan(payload, (err, data) => {

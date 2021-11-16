@@ -17,6 +17,6 @@
   },
   "homepage": "https://github.com/nakedsushi/lambda-foodie-friend#readme",
   "devDependencies": {
-    "aws-sdk": "^2.517.0"
+    "aws-sdk": "^2.814.0"
   }
 }
